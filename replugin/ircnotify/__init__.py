@@ -51,28 +51,22 @@ class IRCNotifyWorker(Worker):
             properties.reply_to, corr_id, {'status': 'started'}, exchange='')
 
         try:
-            required_params = ('target', 'msg')
+            required_keys = ('slug', 'message', 'phase', 'target')
             try:
-                params = body['parameters']
-            except KeyError:
-                raise IRCNotifyWorkerError(
-                    'Parameters dictionary not passed to IRCNotifyWorker.'
-                    ' Nothing to do!')
-            try:
-                for key in required_params:
-                    if key not in params.keys():
+                for key in required_keys:
+                    if key not in body.keys():
                         raise KeyError()
-                    if type(params[key]) is not str:
+                    if type(body[key]) is not str:
                         raise ValueError()
             except KeyError:
                 raise IRCNotifyWorkerError(
                     'Missing a required param. Requires: %s' % str(
-                        required_params))
+                        required_keys))
             except ValueError:
-                raise IRCNotifyWorkerError('All parameters must be str.')
+                raise IRCNotifyWorkerError('All inputs must be str.')
 
-            output.info('Sending notification to %s on IRC' % params['target'])
-            self._send_msg(params['target'], params['msg'])
+            output.info('Sending notification to %s on IRC' % body['target'])
+            self._send_msg(body['target'], body['message'])
             output.info('IRC notification sent!')
             self.app_logger.info('Finished IRC notification with no errors.')
 
@@ -87,6 +81,7 @@ class IRCNotifyWorker(Worker):
                 {'status': 'failed'},
                 exchange=''
             )
+            # FIXME: HEY! This could make a loop!!!
             self.notify(
                 'IRCNotifyWorker Failed',
                 str(fwe),

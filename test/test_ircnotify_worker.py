@@ -183,10 +183,10 @@ class TestIRCNotifyWorker(TestCase):
             worker._on_channel_open(self.channel)
 
             body = {
-                'parameters': {
-                    'target': 'someone',
-                    'msg': 'test message',
-                },
+                'slug': 'short',
+                'message': 'test message',
+                'phase': 'started',
+                'target': 'someone',
             }
 
             # Execute the call
@@ -199,44 +199,6 @@ class TestIRCNotifyWorker(TestCase):
             # This should send a message
             worker._send_msg.assert_called_once_with(
                 'someone', 'test message')
-
-    def test_irc_notification_requires_parameters(self):
-        """
-        IRC notification should fail if no parameters are sent.
-        """
-        with nested(
-                mock.patch('pika.SelectConnection'),
-                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
-                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
-                mock.patch('replugin.ircnotify.IRCNotifyWorker._send_msg'),
-                mock.patch('replugin.ircnotify.IRC')):
-
-            worker = ircnotify.IRCNotifyWorker(
-                MQ_CONF,
-                logger=self.app_logger,
-                output_dir='/tmp/logs/')
-
-            worker._on_open(self.connection)
-            worker._on_channel_open(self.channel)
-
-            # Execute the call
-            worker.process(
-                self.channel,
-                self.basic_deliver,
-                self.properties,
-                {},
-                self.logger)
-
-            assert worker.send.call_count == 2  # start then error
-            assert worker.send.call_args[0][2] == {
-                'status': 'failed'}
-            assert worker.notify.call_count == 1
-            assert worker.notify.call_args[0][2] == 'failed'
-            # Log should have one error
-            assert self.logger.error.call_count == 1
-
-            # This should not send a message
-            assert worker._send_msg.call_count == 0
 
     def test_irc_notification_fails_with_bad_data(self):
         """
@@ -258,19 +220,22 @@ class TestIRCNotifyWorker(TestCase):
             worker._on_open(self.connection)
             worker._on_channel_open(self.channel)
 
-            for case in (
-                    {'target': 123, 'msg': 'asd'},
-                    {'target': 'a', 'msg': 2314},
-                    {'target': '123'},
-                    {'msg': 'asd'}):
+            fail_msgs = (
+                {'slug': 'a', 'message': 1, 'phase': 'started', 'target': 'a'},
+                {'slug': 1, 'message': 'a', 'phase': 'started', 'target': 'a'},
+                {'slug': 'a', 'message': 'a', 'phase': 1, 'target': 'a'},
+                {'slug': 'a', 'message': 'a', 'phase': 'a', 'target': 1},
+                {'message': 'a', 'phase': 'a', 'target': 'a'},
+                {'slug': 'a',  'phase': 'a', 'target': 'a'},
+                {'slug': 'a', 'message': 'a', 'target': 'a'},
+                {'slug': 'a', 'message': 'a', 'phase': 'a'},
+            )
+
+            for body in fail_msgs:
                 # Reset some mocks
                 worker.send.reset_mock()
                 worker.notify.reset_mock()
                 self.logger.reset_mock()
-
-                body = {
-                    'parameters': case
-                }
 
                 # Execute the call
                 worker.process(
