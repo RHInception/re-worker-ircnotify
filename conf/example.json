@@ -1,0 +1,7 @@
+{
+    "server": "127.0.0.1",
+    "port": 6697,
+    "ssl": true,
+    "channels": ["#releaseengine"],
+    "nick": "renotify"
+}

@@ -18,6 +18,7 @@ Unittests.
 
 import pika
 import mock
+import json
 
 from contextlib import nested
 
@@ -78,15 +79,99 @@ class TestIRCNotifyWorker(TestCase):
         self.app_logger.reset_mock()
         self.connection.reset_mock()
 
-    def test_notification(self):
+    def test__setup_irc(self):
         """
-        Verify notification works.
+        Verify _setup_irc properly sets up IRC variables.
         """
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRC')) as (
+                    _, _, _, ircmock):
+            worker = ircnotify.IRCNotifyWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                config_file='conf/example.json',
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+            worker._setup_irc()
+            # IRC() should be called once
+            ircmock.assert_called_once()
+            # We should have the following variables defined
+            assert worker._irc_client
+            assert worker._irc_transport
+            # Verify the connection used the config details
+            with open('conf/example.json', 'r') as conf_f:
+                config_data = json.load(conf_f)
+                worker._irc_transport.connect.assert_called_once_with(
+                    config_data['server'],
+                    int(config_data['port']),
+                    config_data['nick'])
+
+    def test__send_msg(self):
+        """
+        Verify _send_msg calls the proper methods.
+        """
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRC')):
+            worker = ircnotify.IRCNotifyWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                config_file='conf/example.json',
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+            worker._setup_irc()
+            worker._send_msg('someone', 'this is a test')
+            # We should end up sending the data to the server
+            worker._irc_transport.privmsg.assert_called_once_with(
+                'someone', 'this is a test')
+            worker._irc_client.process_once.assert_called_once()
+
+    def test_run_forever(self):
+        """
+        Since this worker overrides run_forever, make sure it calls everything
+        needed.
+        """
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.Worker.run_forever'),
+                mock.patch('replugin.ircnotify.IRC')) as (_, _, _, rf, _):
+
+            worker = ircnotify.IRCNotifyWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                config_file='conf/example.json',
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+            worker.run_forever()
+            # We should have the following variables defined because
+            # of _setup_irc
+            assert worker._irc_client
+            assert worker._irc_transport
+            # Worker.run_forever must be called
+            assert rf.assert_called_once()
+
+'''
         # TODO
         with nested(
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
-                mock.patch('replugin.ircnotify.IRCNotifyWorker.send')):
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRC')) as (
+                    con, notify, send, irc):
+
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
                 logger=self.app_logger,
@@ -107,3 +192,4 @@ class TestIRCNotifyWorker(TestCase):
                 self.properties,
                 body,
                 self.logger)
+'''

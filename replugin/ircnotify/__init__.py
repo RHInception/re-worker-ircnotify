@@ -20,6 +20,8 @@ IRC Notification worker.
 
 from reworker.worker import Worker
 
+from irc.client import IRC
+
 
 class IRCWorkerError(Exception):
     """
@@ -38,7 +40,8 @@ class IRCNotifyWorker(Worker):
         Sends notifications to IRC.
 
         `Params Required`:
-            * target: The person or channel to get the message.
+            * target: The person or channel who will receive the message.
+            * msg: The message to send.
         """
         # Ack the original message
         self.ack(basic_deliver)
@@ -46,6 +49,47 @@ class IRCNotifyWorker(Worker):
         # Notify we are starting
         self.send(
             properties.reply_to, corr_id, {'status': 'started'}, exchange='')
+
+    def _send_msg(self, target, msg):
+        """
+        Sends a message to IRC.
+
+        `Parameters`:
+            * target: The person or channel who will receive the message.
+            * msg: The message to send.
+        """
+        self.app_logger.debug('Sending "%s" the message "%s"', (target, msg))
+        self._irc_transport.privmsg(target, msg)
+        self.app_logger.debug('Executing IRC.process_once(5)')
+        self._irc_client.process_once(5)
+        self.app_logger.debug('IRCNotifyWorker._send_msg() finished.')
+
+    def _setup_irc(self):
+        """
+        Sets up the IRC related variables.
+        """
+        self._irc_client = IRC()
+        self._irc_transport = self._irc_client.server()
+        self.app_logger.info(
+            'Connecting to IRC %s:%s as %s' % (
+                self._config['server'],
+                self._config['port'],
+                self._config['nick']))
+        self._irc_transport.connect(
+            self._config['server'],
+            int(self._config['port']),
+            self._config['nick'])
+        self.app_logger.info('IRC connection established.')
+
+    def run_forever(self):
+        """
+        Override run_forever so we can wrap IRC connection/disconnection.
+        """
+        self._setup_irc()
+        # Execute Worker's run_forver
+        Worker.run_forever(self)
+        self._irc_transport.disconnect('Worker exit.')
+        self.app_logger.info('Disconnected from IRC.')
 
 
 if __name__ == '__main__':
