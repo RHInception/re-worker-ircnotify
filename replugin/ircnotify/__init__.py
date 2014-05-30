@@ -35,7 +35,10 @@ class IRCNotifyWorker(Worker):
 
     def process(self, channel, basic_deliver, properties, body, output):
         """
+        Sends notifications to IRC.
+
         `Params Required`:
+            * target: The person or channel to get the message.
         """
         # Ack the original message
         self.ack(basic_deliver)
@@ -46,14 +49,5 @@ class IRCNotifyWorker(Worker):
 
 
 if __name__ == '__main__':
-    mq_conf = {
-        'server': '127.0.0.1',
-        'port': 5672,
-        'vhost': '/',
-        'user': 'guest',
-        'password': 'guest',
-    }
-    worker = IRCNotifyWorker(
-        mq_conf,
-        output_dir='/tmp/logs/')
-    worker.run_forever()
+    from reworker.worker import runner
+    runner(IRCNotifyWorker)
