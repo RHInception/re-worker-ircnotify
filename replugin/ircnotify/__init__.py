@@ -23,7 +23,7 @@ from reworker.worker import Worker
 from irc.client import IRC
 
 
-class IRCWorkerError(Exception):
+class IRCNotifyWorkerError(Exception):
     """
     Base exception class for IRCNotifyWorker errors.
     """
@@ -49,6 +49,50 @@ class IRCNotifyWorker(Worker):
         # Notify we are starting
         self.send(
             properties.reply_to, corr_id, {'status': 'started'}, exchange='')
+
+        try:
+            required_params = ('target', 'msg')
+            try:
+                params = body['parameters']
+            except KeyError:
+                raise IRCNotifyWorkerError(
+                    'Parameters dictionary not passed to IRCNotifyWorker.'
+                    ' Nothing to do!')
+            try:
+                for key in required_params:
+                    if key not in params.keys():
+                        raise KeyError()
+                    if type(params[key]) is not str:
+                        raise ValueError()
+            except KeyError:
+                raise IRCNotifyWorkerError(
+                    'Missing a required param. Requires: %s' % str(
+                        required_params))
+            except ValueError:
+                raise IRCNotifyWorkerError('All parameters must be str.')
+
+            output.info('Sending notification to %s on IRC' % params['target'])
+            self._send_msg(params['target'], params['msg'])
+            output.info('IRC notification sent!')
+            self.app_logger.info('Finished IRC notification with no errors.')
+
+        except IRCNotifyWorkerError, fwe:
+            # If a IRCNotifyWorkerError happens send a failure, notify and log
+            # the info for review.
+            self.app_logger.error('Failure: %s' % fwe)
+
+            self.send(
+                properties.reply_to,
+                corr_id,
+                {'status': 'failed'},
+                exchange=''
+            )
+            self.notify(
+                'IRCNotifyWorker Failed',
+                str(fwe),
+                'failed',
+                corr_id)
+            output.error(str(fwe))
 
     def _send_msg(self, target, msg):
         """
@@ -80,6 +124,8 @@ class IRCNotifyWorker(Worker):
             int(self._config['port']),
             self._config['nick'])
         self.app_logger.info('IRC connection established.')
+        for irc_chan in self._config['channels']:
+            self._irc_transport.join(irc_chan)
 
     def run_forever(self):
         """
@@ -92,6 +138,6 @@ class IRCNotifyWorker(Worker):
         self.app_logger.info('Disconnected from IRC.')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma nocover
     from reworker.worker import runner
     runner(IRCNotifyWorker)

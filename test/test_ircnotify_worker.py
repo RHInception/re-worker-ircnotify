@@ -163,14 +163,16 @@ class TestIRCNotifyWorker(TestCase):
             # Worker.run_forever must be called
             assert rf.assert_called_once()
 
-'''
-        # TODO
+    def test_irc_notification(self):
+        """
+        Verify that when a notification comes in the proper IRC results happen.
+        """
         with nested(
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
-                mock.patch('replugin.ircnotify.IRC')) as (
-                    con, notify, send, irc):
+                mock.patch('replugin.ircnotify.IRCNotifyWorker._send_msg'),
+                mock.patch('replugin.ircnotify.IRC')):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
@@ -182,6 +184,8 @@ class TestIRCNotifyWorker(TestCase):
 
             body = {
                 'parameters': {
+                    'target': 'someone',
+                    'msg': 'test message',
                 },
             }
 
@@ -192,4 +196,97 @@ class TestIRCNotifyWorker(TestCase):
                 self.properties,
                 body,
                 self.logger)
-'''
+            # This should send a message
+            worker._send_msg.assert_called_once_with(
+                'someone', 'test message')
+
+    def test_irc_notification_requires_parameters(self):
+        """
+        IRC notification should fail if no parameters are sent.
+        """
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker._send_msg'),
+                mock.patch('replugin.ircnotify.IRC')):
+
+            worker = ircnotify.IRCNotifyWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+
+            # Execute the call
+            worker.process(
+                self.channel,
+                self.basic_deliver,
+                self.properties,
+                {},
+                self.logger)
+
+            assert worker.send.call_count == 2  # start then error
+            assert worker.send.call_args[0][2] == {
+                'status': 'failed'}
+            assert worker.notify.call_count == 1
+            assert worker.notify.call_args[0][2] == 'failed'
+            # Log should have one error
+            assert self.logger.error.call_count == 1
+
+            # This should not send a message
+            assert worker._send_msg.call_count == 0
+
+    def test_irc_notification_fails_with_bad_data(self):
+        """
+        Verify that when a notification comes in with bad data the
+        proper exceptions happen.
+        """
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker._send_msg'),
+                mock.patch('replugin.ircnotify.IRC')):
+
+            worker = ircnotify.IRCNotifyWorker(
+                MQ_CONF,
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+
+            for case in (
+                    {'target': 123, 'msg': 'asd'},
+                    {'target': 'a', 'msg': 2314},
+                    {'target': '123'},
+                    {'msg': 'asd'}):
+                # Reset some mocks
+                worker.send.reset_mock()
+                worker.notify.reset_mock()
+                self.logger.reset_mock()
+
+                body = {
+                    'parameters': case
+                }
+
+                # Execute the call
+                worker.process(
+                    self.channel,
+                    self.basic_deliver,
+                    self.properties,
+                    body,
+                    self.logger)
+
+                assert worker.send.call_count == 2  # start then error
+                assert worker.send.call_args[0][2] == {
+                    'status': 'failed'}
+                assert worker.notify.call_count == 1
+                assert worker.notify.call_args[0][2] == 'failed'
+                # Log should have one error
+                assert self.logger.error.call_count == 1
+
+                # This should not send a message
+                assert worker._send_msg.call_count == 0
