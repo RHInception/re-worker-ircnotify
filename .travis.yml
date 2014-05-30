@@ -1,0 +1,11 @@
+language: python
+python:
+    - "2.7"
+install:
+    - "pip install pep8 nose coverage mock"
+    - "wget https://github.com/RHInception/re-worker/archive/master.zip && unzip master.zip && cd re-worker-master && python setup.py install && cd .."
+script:
+    - "pep8 replugin/"
+    - "nosetests -v --with-cover --cover-min-percentage=80 --cover-package=replugin test/"
+notifications:
+    email: false
