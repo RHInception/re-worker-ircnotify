@@ -51,16 +51,15 @@ class IRCNotifyWorker(Worker):
             properties.reply_to, corr_id, {'status': 'started'}, exchange='')
 
         try:
-            # NOTE: target is added later since it is a list
-            required_keys = ['slug', 'message', 'phase']
+            required_keys = ('slug', 'message', 'phase', 'target')
             try:
-                for key in required_keys:
+                # Remove target from this check
+                for key in required_keys[0:3]:
                     if key not in body.keys():
                         raise KeyError()
                     if type(body[key]) is not str:
                         raise ValueError()
-                # target is required too
-                required_keys.append('target')
+                # Check target on it's own since it's a list of strs
                 if 'target' not in body.keys():
                     raise KeyError()
                 if type(body['target']) is not list:
