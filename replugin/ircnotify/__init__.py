@@ -75,8 +75,10 @@ class IRCNotifyWorker(Worker):
             except ValueError:
                 raise IRCNotifyWorkerError('All inputs must be str.')
 
-            output.info('Sending notification to %s on IRC' % body['target'])
-            self._send_msg(body['target'], body['message'])
+            output.info('Sending notification to %s on IRC' % ", ".join(
+                body['target']))
+            for target in body['target']:
+                self._send_msg(target, body['message'])
             output.info('IRC notification sent!')
             self.app_logger.info('Finished IRC notification with no errors.')
 
@@ -91,12 +93,6 @@ class IRCNotifyWorker(Worker):
                 {'status': 'failed'},
                 exchange=''
             )
-            # FIXME: HEY! This could make a loop!!!
-            self.notify(
-                'IRCNotifyWorker Failed',
-                str(fwe),
-                'failed',
-                corr_id)
             output.error(str(fwe))
 
     def _send_msg(self, target, msg):

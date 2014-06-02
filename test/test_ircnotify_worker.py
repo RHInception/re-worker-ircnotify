@@ -198,7 +198,7 @@ class TestIRCNotifyWorker(TestCase):
                 self.logger)
             # This should send a message
             worker._send_msg.assert_called_once_with(
-                ['someone'], 'test message')
+                'someone', 'test message')
 
     def test_irc_notification_fails_with_bad_data(self):
         """
@@ -250,8 +250,6 @@ class TestIRCNotifyWorker(TestCase):
                 assert worker.send.call_count == 2  # start then error
                 assert worker.send.call_args[0][2] == {
                     'status': 'failed'}
-                assert worker.notify.call_count == 1
-                assert worker.notify.call_args[0][2] == 'failed'
                 # Log should have one error
                 assert self.logger.error.call_count == 1
 
