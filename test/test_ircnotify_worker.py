@@ -186,7 +186,7 @@ class TestIRCNotifyWorker(TestCase):
                 'slug': 'short',
                 'message': 'test message',
                 'phase': 'started',
-                'target': 'someone',
+                'target': ['someone'],
             }
 
             # Execute the call
@@ -198,7 +198,7 @@ class TestIRCNotifyWorker(TestCase):
                 self.logger)
             # This should send a message
             worker._send_msg.assert_called_once_with(
-                'someone', 'test message')
+                ['someone'], 'test message')
 
     def test_irc_notification_fails_with_bad_data(self):
         """
@@ -221,14 +221,16 @@ class TestIRCNotifyWorker(TestCase):
             worker._on_channel_open(self.channel)
 
             fail_msgs = (
-                {'slug': 'a', 'message': 1, 'phase': 'started', 'target': 'a'},
-                {'slug': 1, 'message': 'a', 'phase': 'started', 'target': 'a'},
-                {'slug': 'a', 'message': 'a', 'phase': 1, 'target': 'a'},
+                {'slug': 'a', 'message': 1,
+                 'phase': 'started', 'target': ['a']},
+                {'slug': 1, 'message': 'a',
+                 'phase': 'started', 'target': ['a']},
+                {'slug': 'a', 'message': 'a', 'phase': 1, 'target': ['a']},
                 {'slug': 'a', 'message': 'a', 'phase': 'a', 'target': 1},
-                {'message': 'a', 'phase': 'a', 'target': 'a'},
-                {'slug': 'a',  'phase': 'a', 'target': 'a'},
-                {'slug': 'a', 'message': 'a', 'target': 'a'},
-                {'slug': 'a', 'message': 'a', 'phase': 'a'},
+                {'message': 'a', 'phase': 'a', 'target': ['a']},
+                {'slug': 'a',  'phase': 'a', 'target': ['a']},
+                {'slug': 'a', 'message': 'a', 'target': ['a']},
+                {'slug': 'a', 'message': 'a', 'phase': ['a']},
             )
 
             for body in fail_msgs:
