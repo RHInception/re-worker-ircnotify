@@ -102,6 +102,11 @@ class IRCNotifyWorker(Worker):
             * target: The person or channel who will receive the message.
             * msg: The message to send.
         """
+        # If we are sending to a channel we are not in then join it!
+        if target.startswith('#') and target not in self._config['channels']:
+            self.app_logger.info('Joining %s to send a message' % irc_chan)
+            self._irc.transport.join(target)
+            self._config['channels'].append(target)
         self.app_logger.debug('Sending "%s" the message "%s"', (target, msg))
         self._irc_transport.privmsg(target, msg)
         self.app_logger.debug('Executing IRC.process_once(5)')
@@ -125,6 +130,7 @@ class IRCNotifyWorker(Worker):
             self._config['nick'])
         self.app_logger.info('IRC connection established.')
         for irc_chan in self._config['channels']:
+            self.app_logger.info('Joining %s' % irc_chan)
             self._irc_transport.join(irc_chan)
 
     def run_forever(self):
