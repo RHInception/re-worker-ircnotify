@@ -18,7 +18,6 @@ IRC Notification worker.
 """
 
 
-
 from reworker.worker import Worker
 
 from irc.client import IRC
