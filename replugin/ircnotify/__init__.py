@@ -40,7 +40,7 @@ class IRCNotifyWorker(Worker):
         Sends notifications to IRC.
 
         `Params Required`:
-            * target: The person or channel who will receive the message.
+            * target: List of persons/channels who will receive the message.
             * msg: The message to send.
         """
         # Ack the original message
