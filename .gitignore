@@ -1,6 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+rpm-build/
+MANIFEST
 
 # C extensions
 *.so
