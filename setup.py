@@ -17,7 +17,12 @@
 import os
 import sys
 
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    import warnings
+    warnings.warn('No setuptools. Script creation will be skipped.')
+    from distutils.core import setup
 
 
 setup(
@@ -29,5 +34,10 @@ setup(
     url='https://github.com/rhinception/re-worker-ircnotify',
     license='AGPLv3',
     package_dir={'replugin': 'replugin'},
-    packages=['replugin', 'replugin.ircnotify']
+    packages=['replugin', 'replugin.ircnotify'],
+    entry_points={
+        'console_scripts': [
+            're-worker-ircnotify = replugin.ircnotify:main',
+        ],
+    }
 )

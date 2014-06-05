@@ -144,6 +144,10 @@ class IRCNotifyWorker(Worker):
         self.app_logger.info('Disconnected from IRC.')
 
 
-if __name__ == '__main__':  # pragma nocover
+def main():  # pragma nocover
     from reworker.worker import runner
     runner(IRCNotifyWorker)
+
+
+if __name__ == '__main__':  # pragma nocover
+    main()
