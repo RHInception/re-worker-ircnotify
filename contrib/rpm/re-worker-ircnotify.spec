@@ -18,7 +18,7 @@ Source0: %{_src_name}-%{version}.tar.gz
 Url: https://github.com/rhinception/re-worker-ircnotify
 
 BuildArch: noarch
-BuildRequires: python2-devel
+BuildRequires: python2-devel, python-setuptools
 Requires: python-irc, reworker
 
 %description
