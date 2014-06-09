@@ -10,7 +10,7 @@
 Name: re-worker-ircnotify
 Summary: RE IRC notification worker
 Version: 0.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -18,8 +18,10 @@ Source0: %{_src_name}-%{version}.tar.gz
 Url: https://github.com/rhinception/re-worker-ircnotify
 
 BuildArch: noarch
-BuildRequires: python2-devel, python-setuptools
-Requires: python-irc, reworker
+BuildRequires: python2-devel
+BuildRequires: python-setuptools
+Requires: re-worker
+Requires: python-irc
 
 %description
 This notification worker handles pushing notifications out through IRC.
@@ -38,5 +40,8 @@ This notification worker handles pushing notifications out through IRC.
 %dir %{python2_sitelib}/%{_pkg_name}
 
 %changelog
+* Mon Jun  9 2014 Chris Murphy <chmurphy@redhat.com> - 0.0.1-2
+- Fix of rpm dependencies
+
 * Thu Jun  5 2014 Steve Milner <stevem@gnulinux.et> - 0.0.1-1
 - First release
