@@ -22,6 +22,7 @@ BuildRequires: python2-devel
 BuildRequires: python-setuptools
 Requires: re-worker
 Requires: python-irc
+Requires: python-setuptools
 
 %description
 This notification worker handles pushing notifications out through IRC.
@@ -40,6 +41,9 @@ This notification worker handles pushing notifications out through IRC.
 %dir %{python2_sitelib}/%{_pkg_name}
 
 %changelog
+* Thu Jun 12 2014 Steve Milner <stevem@gnulinux.et> - 0.0.1-3
+- python-setuptools is required.
+
 * Mon Jun  9 2014 Chris Murphy <chmurphy@redhat.com> - 0.0.1-2
 - Fix of rpm dependencies
 
