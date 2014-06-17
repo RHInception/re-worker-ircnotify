@@ -10,7 +10,7 @@
 Name: re-worker-ircnotify
 Summary: RE IRC notification worker
 Version: 0.0.1
-Release: 2%{?dist}
+Release: 4%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -39,8 +39,12 @@ This notification worker handles pushing notifications out through IRC.
 %files -f re-worker-ircnotify-files.txt
 %doc README.md LICENSE AUTHORS
 %dir %{python2_sitelib}/%{_pkg_name}
+%exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Tue Jun 17 2014 Ryan Cook <rcook@redhat.com> - 0.0.1-4
+- Added exclude __init__.py*
+
 * Thu Jun 12 2014 Steve Milner <stevem@gnulinux.et> - 0.0.1-3
 - python-setuptools is required.
 
