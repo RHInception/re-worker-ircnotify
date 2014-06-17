@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 rpm-build/
 MANIFEST
+re-worker-ircnotifyenv
 
 # C extensions
 *.so
