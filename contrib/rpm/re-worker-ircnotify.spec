@@ -10,7 +10,7 @@
 Name: re-worker-ircnotify
 Summary: RE IRC notification worker
 Version: 0.0.1
-Release: 4%{?dist}
+Release: 5%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -37,11 +37,15 @@ This notification worker handles pushing notifications out through IRC.
 %{__python2} setup.py install -O1 --root=$RPM_BUILD_ROOT --record=re-worker-ircnotify-files.txt
 
 %files -f re-worker-ircnotify-files.txt
+%defattr(-, root, root)
 %doc README.md LICENSE AUTHORS
 %dir %{python2_sitelib}/%{_pkg_name}
 %exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Wed Jun 18 2014 Steve Milner <stevem@gnulinux.net> - 0.0.1-5
+- Defattr not being used in files section.
+
 * Tue Jun 17 2014 Ryan Cook <rcook@redhat.com> - 0.0.1-4
 - Added exclude __init__.py*
 
