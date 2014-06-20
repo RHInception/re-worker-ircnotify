@@ -16,6 +16,7 @@
 IRC Notification worker.
 """
 
+import types
 
 from reworker.worker import Worker
 
@@ -56,7 +57,7 @@ class IRCNotifyWorker(Worker):
                 for key in required_keys[0:3]:
                     if key not in body.keys():
                         raise KeyError()
-                    if type(body[key]) is not str:
+                    if not type(body[key]) in types.StringTypes:
                         raise ValueError()
                 # Check target on it's own since it's a list of strs
                 if 'target' not in body.keys():
@@ -64,7 +65,7 @@ class IRCNotifyWorker(Worker):
                 if type(body['target']) is not list:
                     raise ValueError()
                 for key in body['target']:
-                    if type(key) is not str:
+                    if not type(key) in types.StringTypes:
                         raise ValueError()
             except KeyError:
                 raise IRCNotifyWorkerError(
