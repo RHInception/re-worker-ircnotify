@@ -111,7 +111,7 @@ class IRCNotifyWorker(Worker):
         # If we are sending to a channel we are not in then join it!
         if target.startswith('#') and target not in self._config['channels']:
             self.app_logger.info('Joining %s to send a message' % target)
-            self._irc_client.transport.join(target)
+            self._irc_transport.join(target)
             self._config['channels'].append(target)
         self.app_logger.debug('Sending "%s" the message "%s"', (target, msg))
         self._irc_transport.privmsg(target, msg)
