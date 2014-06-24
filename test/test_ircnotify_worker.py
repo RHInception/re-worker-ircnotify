@@ -87,8 +87,9 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
                 mock.patch('replugin.ircnotify.IRC')) as (
-                    _, _, _, ircmock):
+                    _, _, _, _, ircmock):
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
                 logger=self.app_logger,
@@ -119,6 +120,7 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
                 mock.patch('replugin.ircnotify.IRC')):
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
@@ -144,8 +146,9 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
                 mock.patch('replugin.ircnotify.Worker.run_forever'),
-                mock.patch('replugin.ircnotify.IRC')) as (_, _, _, rf, _):
+                mock.patch('replugin.ircnotify.IRC')) as (_, _, _, _, rf, _):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
@@ -171,16 +174,19 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker._send_msg'),
                 mock.patch('replugin.ircnotify.IRC')):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
+                config_file='conf/example.json',
                 logger=self.app_logger,
                 output_dir='/tmp/logs/')
 
             worker._on_open(self.connection)
             worker._on_channel_open(self.channel)
+            worker._setup_irc()
 
             body = {
                 'slug': 'short',
@@ -209,16 +215,19 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('pika.SelectConnection'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker._send_msg'),
                 mock.patch('replugin.ircnotify.IRC')):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
+                config_file='conf/example.json',
                 logger=self.app_logger,
                 output_dir='/tmp/logs/')
 
             worker._on_open(self.connection)
             worker._on_channel_open(self.channel)
+            worker._setup_irc()
 
             fail_msgs = (
                 {'slug': 'a', 'message': 1,

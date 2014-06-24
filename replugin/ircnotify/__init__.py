@@ -43,6 +43,12 @@ class IRCNotifyWorker(Worker):
             * target: List of persons/channels who will receive the message.
             * msg: The message to send.
         """
+        if not getattr(self, '_irc_client', None):
+            self.reject(basic_deliver, requeue=True)
+            self.app_logger(
+                'Not connected to IRC yet. Putting message back on the bus.')
+            return
+
         # Ack the original message
         self.ack(basic_deliver)
         corr_id = str(properties.correlation_id)
@@ -105,7 +111,7 @@ class IRCNotifyWorker(Worker):
         # If we are sending to a channel we are not in then join it!
         if target.startswith('#') and target not in self._config['channels']:
             self.app_logger.info('Joining %s to send a message' % target)
-            self._irc.transport.join(target)
+            self._irc_client.transport.join(target)
             self._config['channels'].append(target)
         self.app_logger.debug('Sending "%s" the message "%s"', (target, msg))
         self._irc_transport.privmsg(target, msg)
