@@ -82,7 +82,7 @@ class IRCLoop(object):
         if not self.in_queue.empty():
             target, msg = self.in_queue.get()
             # If we are sending to a channel we are not in then join it!
-            if target.startswith('#') and target not in config['channels']:
+            if target.startswith('#') and target not in self.config['channels']:
                 app_logger.info('Joining %s to send a message' % target)
                 self.irc_transport.join(target)
                 self.config['channels'].append(target)
