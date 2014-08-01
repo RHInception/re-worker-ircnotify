@@ -18,9 +18,77 @@ IRC Notification worker.
 
 import types
 
+from time import sleep
+
+from multiprocessing import Process, Queue
+
 from reworker.worker import Worker
 
 from irc.client import IRC
+
+
+class IRCLoop(object):
+
+    def __init__(self, in_queue, out_queue, app_logger, config):
+        """
+        Loop process for irc communications.
+
+        in_queue is inward coms to pass through to irc
+        out_queue is used to notify the parent process connection finished
+        app_logger is a logger instance
+        config is the configuration structure
+        """
+        # Set up
+        self.in_queue = in_queue
+        self.out_queue = out_queue
+        self.config = config
+        self.app_logger = app_logger
+
+        self.irc_client = IRC()
+        self.irc_transport = self.irc_client.server()
+        self.app_logger.info(
+            'Connecting to IRC %s:%s as %s' % (
+                self.config['server'],
+                self.config['port'],
+                self.config['nick']))
+
+        self.irc_transport.connect(
+            self.config['server'],
+            int(self.config['port']),
+            self.config['nick'])
+        self.app_logger.info('IRC connection established.')
+        for irc_chan in self.config['channels']:
+            self.app_logger.info('Joining %s' % irc_chan)
+            self.irc_transport.join(irc_chan)
+
+        # Wait for a connection to be made
+        for x in range(0, 20):
+            if self.irc_transport.is_connected():
+                self.out_queue.put(True)
+                break
+            else:
+                sleep(2)
+
+        # Check every second for datat to send to irc
+        self.irc_transport.execute_every(1, self.check_and_send)
+        # The blocking loop
+        self.irc_client.process_forever()
+
+    def check_and_send(self):
+        """
+        If there is any data to be sent to irc from the in_queue this internal
+        function will send it.
+        """
+        if not self.in_queue.empty():
+            target, msg = self.in_queue.get()
+            # If we are sending to a channel we are not in then join it!
+            if target.startswith('#') and target not in config['channels']:
+                app_logger.info('Joining %s to send a message' % target)
+                self.irc_transport.join(target)
+                self.config['channels'].append(target)
+            self.app_logger.debug('Sending "%s" the message "%s"', (target, msg))
+            self.irc_transport.privmsg(target, msg)
+            self.app_logger.debug('check_and_send()finished.')
 
 
 class IRCNotifyWorkerError(Exception):
@@ -35,6 +103,19 @@ class IRCNotifyWorker(Worker):
     Worker which knows how to push notification to IRC.
     """
 
+    def __init__(self, *args, **kwargs):
+        """
+        Creates an instance of the IRCNotifyWorker.
+        """
+        Worker.__init__(self, *args, **kwargs)
+        self._irc_comm = Queue()
+        self._irc_resp = Queue()
+        self._irc_client = Process(
+            target=IRCLoop,
+            args=(self._irc_comm, self._irc_resp,
+                  self.app_logger, self._config))
+        self._irc_client.start()
+
     def process(self, channel, basic_deliver, properties, body, output):
         """
         Sends notifications to IRC.
@@ -43,7 +124,7 @@ class IRCNotifyWorker(Worker):
             * target: List of persons/channels who will receive the message.
             * msg: The message to send.
         """
-        if not getattr(self, '_irc_client', None):
+        if not getattr(self, '_irc_comm', None):
             self.reject(basic_deliver, requeue=True)
             self.app_logger(
                 'Not connected to IRC yet. Putting message back on the bus.')
@@ -83,7 +164,7 @@ class IRCNotifyWorker(Worker):
             output.info('Sending notification to %s on IRC' % ", ".join(
                 body['target']))
             for target in body['target']:
-                self._send_msg(target, body['message'])
+                self._irc_comm.put((target, body['message']))
             output.info('IRC notification sent!')
             self.app_logger.info('Finished IRC notification with no errors.')
 
@@ -100,54 +181,22 @@ class IRCNotifyWorker(Worker):
             )
             output.error(str(fwe))
 
-    def _send_msg(self, target, msg):
-        """
-        Sends a message to IRC.
-
-        `Parameters`:
-            * target: The person or channel who will receive the message.
-            * msg: The message to send.
-        """
-        # If we are sending to a channel we are not in then join it!
-        if target.startswith('#') and target not in self._config['channels']:
-            self.app_logger.info('Joining %s to send a message' % target)
-            self._irc_transport.join(target)
-            self._config['channels'].append(target)
-        self.app_logger.debug('Sending "%s" the message "%s"', (target, msg))
-        self._irc_transport.privmsg(target, msg)
-        self.app_logger.debug('Executing IRC.process_once(5)')
-        self._irc_client.process_once(5)
-        self.app_logger.debug('IRCNotifyWorker._send_msg() finished.')
-
-    def _setup_irc(self):
-        """
-        Sets up the IRC related variables.
-        """
-        self._irc_client = IRC()
-        self._irc_transport = self._irc_client.server()
-        self.app_logger.info(
-            'Connecting to IRC %s:%s as %s' % (
-                self._config['server'],
-                self._config['port'],
-                self._config['nick']))
-        self._irc_transport.connect(
-            self._config['server'],
-            int(self._config['port']),
-            self._config['nick'])
-        self.app_logger.info('IRC connection established.')
-        for irc_chan in self._config['channels']:
-            self.app_logger.info('Joining %s' % irc_chan)
-            self._irc_transport.join(irc_chan)
-
     def run_forever(self):
         """
         Override run_forever so we can wrap IRC connection/disconnection.
         """
-        self._setup_irc()
-        # Execute Worker's run_forver
-        Worker.run_forever(self)
-        self._irc_transport.disconnect('Worker exit.')
-        self.app_logger.info('Disconnected from IRC.')
+        # Wait to get the connection response before joining the bus
+        try:
+            if self._irc_resp.get(timeout=30) is True:
+                # Execute Worker's run_forver
+                Worker.run_forever(self)
+                self._irc_client.terminate()
+                self._irc_client.join()
+                self.app_logger.info('Disconnected from IRC.')
+            else:
+                raise Queue.Empty
+        except Queue.Empty:
+            self.app_logger.fatal('Unable to connect to IRC!')
 
 
 def main():  # pragma nocover
