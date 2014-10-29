@@ -1,2 +1,2 @@
 reworker
-irc
+irc==8.9.1
