@@ -21,10 +21,10 @@ import types
 from time import sleep
 
 from multiprocessing import Process, Queue
-
+from multiprocessing.queues import Empty
 from reworker.worker import Worker
 
-from irc.client import IRC
+from irc.client import Reactor
 
 
 class IRCLoop(object):
@@ -44,7 +44,7 @@ class IRCLoop(object):
         self.config = config
         self.app_logger = app_logger
 
-        self.irc_client = IRC()
+        self.irc_client = Reactor()
         self.irc_transport = self.irc_client.server()
         self.app_logger.info(
             'Connecting to IRC %s:%s as %s' % (
@@ -194,8 +194,8 @@ class IRCNotifyWorker(Worker):
                 self._irc_client.join()
                 self.app_logger.info('Disconnected from IRC.')
             else:
-                raise Queue.Empty
-        except Queue.Empty:
+                raise Empty
+        except Empty:
             self.app_logger.fatal('Unable to connect to IRC!')
 
 

@@ -47,7 +47,7 @@ class TestIRCLoop(TestCase):
         """
         with nested(
                 mock.patch('logging.Logger'),
-                mock.patch('replugin.ircnotify.IRC')) as (logger, IRC):
+                mock.patch('replugin.ircnotify.Reactor')) as (logger, Reactor):
 
             in_queue = Queue()
             out_queue = Queue()

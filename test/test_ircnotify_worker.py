@@ -90,7 +90,7 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
                 mock.patch('replugin.ircnotify.Worker.run_forever'),
-                mock.patch('replugin.ircnotify.IRC')) as (_, _, _, _, rf, _):
+                mock.patch('replugin.ircnotify.Reactor')) as (_, _, _, _, rf, _):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
@@ -113,7 +113,7 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
-                mock.patch('replugin.ircnotify.IRC')):
+                mock.patch('replugin.ircnotify.Reactor')):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
@@ -155,7 +155,7 @@ class TestIRCNotifyWorker(TestCase):
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
                 mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
-                mock.patch('replugin.ircnotify.IRC')):
+                mock.patch('replugin.ircnotify.Reactor')):
 
             worker = ircnotify.IRCNotifyWorker(
                 MQ_CONF,
