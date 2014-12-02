@@ -9,7 +9,7 @@
 
 Name: re-worker-ircnotify
 Summary: RE IRC notification worker
-Version: 0.0.3
+Version: 0.0.4
 Release: 1%{?dist}
 
 Group: Applications/System
@@ -43,6 +43,9 @@ This notification worker handles pushing notifications out through IRC.
 %exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Tue Dec  2 2014 Steve Milner <stevem@gnulinux.net> - 0.0.4-1
+- Connections no longer clobber eachother.
+
 * Mon Nov 17 2014 Steve Milner <stevem@gnulinux.net> - 0.0.3-1
 - Updates to use irc 11.x.
 

@@ -108,6 +108,7 @@ class IRCNotifyWorker(Worker):
         Creates an instance of the IRCNotifyWorker.
         """
         Worker.__init__(self, *args, **kwargs)
+        self.__initial_start = True  # Records if we are in the initial start
         self._irc_comm = Queue()
         self._irc_resp = Queue()
         self._irc_client = Process(
@@ -187,14 +188,15 @@ class IRCNotifyWorker(Worker):
         """
         # Wait to get the connection response before joining the bus
         try:
-            if self._irc_resp.get(timeout=30) is True:
-                # Execute Worker's run_forver
-                Worker.run_forever(self)
-                self._irc_client.terminate()
-                self._irc_client.join()
-                self.app_logger.info('Disconnected from IRC.')
-            else:
-                raise Empty
+            if self.__initial_start:
+                self.__initial_start = False
+                if self._irc_resp.get(timeout=30) is not True:
+                    raise Empty
+            # Execute Worker's run_forver
+            Worker.run_forever(self)
+            self._irc_client.terminate()
+            self._irc_client.join()
+            self.app_logger.info('Disconnected from IRC.')
         except Empty:
             self.app_logger.fatal('Unable to connect to IRC!')
 
