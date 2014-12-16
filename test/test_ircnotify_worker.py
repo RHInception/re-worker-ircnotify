@@ -145,6 +145,54 @@ class TestIRCNotifyWorker(TestCase):
             assert worker._irc_comm.put.call_args[0][0][0] == 'someone'
             assert worker._irc_comm.put.call_args[0][0][1] == 'test message'
 
+    def test_irc_notification_works_with_step_format(self):
+        """
+        Verify that this work can also handle step notification format.
+        """
+        with nested(
+                mock.patch('pika.SelectConnection'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.notify'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.send'),
+                mock.patch('replugin.ircnotify.IRCNotifyWorker.reject'),
+                mock.patch('replugin.ircnotify.Reactor')):
+
+            worker = ircnotify.IRCNotifyWorker(
+                MQ_CONF,
+                config_file='conf/example.json',
+                logger=self.app_logger,
+                output_dir='/tmp/logs/')
+
+            worker._on_open(self.connection)
+            worker._on_channel_open(self.channel)
+
+            worker._irc_comm = mock.MagicMock('multiprocessing.Queue').__call__()
+
+            body = {
+                'group': 'test',
+                'dynamic': {},
+                'notify': {},
+                'parameters': {
+                    'command': 'irc',
+                    'subcommand': 'IRC',
+                    'slug': 'short',
+                    'message': 'test message',
+                    'phase': 'started',
+                    'target': ['someone'],
+                }
+            }
+
+            # Execute the call
+            worker.process(
+                self.channel,
+                self.basic_deliver,
+                self.properties,
+                body,
+                self.logger)
+
+            # This should send a message
+            assert worker._irc_comm.put.call_args[0][0][0] == 'someone'
+            assert worker._irc_comm.put.call_args[0][0][1] == 'test message'
+
     def test_irc_notification_fails_with_bad_data(self):
         """
         Verify that when a notification comes in with bad data the

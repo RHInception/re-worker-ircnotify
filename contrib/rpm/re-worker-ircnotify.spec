@@ -9,7 +9,7 @@
 
 Name: re-worker-ircnotify
 Summary: RE IRC notification worker
-Version: 0.0.4
+Version: 0.0.5
 Release: 1%{?dist}
 
 Group: Applications/System
@@ -20,7 +20,7 @@ Url: https://github.com/rhinception/re-worker-ircnotify
 BuildArch: noarch
 BuildRequires: python2-devel
 BuildRequires: python-setuptools
-Requires: re-worker
+Requires: re-worker >= 0.0.7
 Requires: python-irc
 Requires: python-setuptools
 
@@ -43,6 +43,9 @@ This notification worker handles pushing notifications out through IRC.
 %exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Tue Dec 16 2014 Steve Milner <stevem@gnulinux.net> - 0.0.5-1
+- Now accepts step message format as well.
+
 * Tue Dec  2 2014 Steve Milner <stevem@gnulinux.net> - 0.0.4-1
 - Connections no longer clobber eachother.
 
